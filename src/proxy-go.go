@@ -2,17 +2,19 @@ package main
 
 import (
 	"net/http"
-	"log"
+	"fmt"
 	"bytes"
+    "transformers"
 )
 
 func main() {
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
+    fmt.Printf("server listening on port 8080\n")
 }
 
 func handler(responseWriter http.ResponseWriter, request *http.Request) {
-	log.Printf("Request received: %v %v", request.Method, request.RequestURI)
+	fmt.Printf("Request received: %v %v\n", request.Method, request.RequestURI)
 
 	httpClient := http.DefaultClient
 	response, err := httpClient.Do(copyRequest(request))
@@ -28,6 +30,12 @@ func handler(responseWriter http.ResponseWriter, request *http.Request) {
 			responseWriter.Header().Add(header, headerValue)
 		}
 	}
+
+    if response.Header.Get("Content-Type") == transformers.PngContentType {
+        if res := transformers.FlipPng(response); res != nil {
+            response = res
+        }
+    }
 
 	responseBuffer := &bytes.Buffer{}
 	responseBuffer.ReadFrom(response.Body)
